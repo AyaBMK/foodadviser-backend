@@ -3,6 +3,7 @@ import requests
 import os 
 from dotenv import load_dotenv
 from ingredients.models import Ingredient 
+from django.http import JsonResponse
 
 load_dotenv() 
 API_KEY = os.getenv("API_KEY")
