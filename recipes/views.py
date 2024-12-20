@@ -83,12 +83,12 @@ def save_ingredients_for_recipe(recipe_id):
         recipe_details = response.json()
 
         for ingredient_data in recipe_details.get('extendedIngredients', []):
-            ingredient_id = ingredient_data.get('id', None)
+            spoonacular_id = ingredient_data.get('id', None)
             try: 
-                Ingredient.objects.update_or_create(
-                    name=ingredient_data['name'],
+                Ingredient.objects.get_or_create(
+                    id_ingredient=spoonacular_id,
                     defaults={
-                        'id_ingredient': ingredient_id,
+                        'name': ingredient_data.get('name'),
                         'image_url': f"https://spoonacular.com/cdn/ingredients_100x100/{ingredient_data.get('image', '')}"
                     }
                 )
