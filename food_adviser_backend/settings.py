@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'ingredients', 
     'recipes',
+    'recipeingredient',
 ]
 
 MIDDLEWARE = [
