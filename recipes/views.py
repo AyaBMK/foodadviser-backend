@@ -6,10 +6,11 @@ import os
 from .models import Recipe, Nutrition
 from recipeingredient.models import UnitIngr, RecipeIngr
 from ingredients.models import Ingredient
+from django.db.utils import IntegrityError
 
 load_dotenv()
 
-api_key = os.getenv('API_KEY_S')
+api_key = os.getenv('API_KEY_E')
 
 def get_recipe(request, recipe_id):
     cache_key = f"recipe_{recipe_id}"
@@ -23,14 +24,18 @@ def get_recipe(request, recipe_id):
     
     if response.status_code == 200:
         data = response.json()
-        cache.set(cache_key, data, timeout=3600)  
-        # populate_units_and_recipe_ingredients(recipe_id)
+        update_or_create_ingredients_from_api(recipe_id)
+        cache.set(cache_key, data, timeout=3600)  # Cache the data for an hour
         return JsonResponse(data)
     else:
         return JsonResponse({"error": "Unable to fetch recipe data"}, status=500)
-    
+
+
+
 def get_recipes_list(request):
-    number = request.GET.get('number', 100)
+    number = int(request.GET.get('number', 100))  
+    recipes = Recipe.objects.all()[:number]  
+    recipes_data = []
 
     # Premièrement, récupère la liste des recettes
     url = f'https://api.spoonacular.com/recipes/complexSearch?apiKey={api_key}&number={number}'
@@ -46,12 +51,80 @@ def get_recipes_list(request):
             cached_recipe = cache.get(f"recipe_{recipe_id}")
             if not cached_recipe:
                 get_recipe_and_populate_ingredients(recipe_id)
+                # update_or_create_ingredients_from_api(recipe_id)
 
         return JsonResponse(data)
     elif response.status_code == 402:
         return JsonResponse({"error": "Daily points limit reached. Please try again tomorrow."}, status=402)
     else:
         return JsonResponse({"error": "Unable to fetch recipes list"}, status=500)
+
+def update_or_create_ingredients_from_api(recipe_id):
+    # URL de l'API pour récupérer les informations d'une recette
+    url = f"https://api.spoonacular.com/recipes/{recipe_id}/information?apiKey={api_key}"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        ingredients_data = data.get("extendedIngredients", [])
+        
+        for ingredient_data in ingredients_data:
+            ingredient_name = ingredient_data["name"]
+            ingredient_id = ingredient_data["id"]
+            ingredient_image_url = f"https://spoonacular.com/cdn/ingredients_100x100/{ingredient_data.get('image', '')}"  # Construire l'URL complète de l'image
+
+            # Vérifier si l'ingrédient existe déjà dans la base de données
+            ingredient, created = Ingredient.objects.update_or_create(
+                id_ingredient=ingredient_id,  # Recherche par id_ingredient
+                defaults={'name': ingredient_name, 'image_url': ingredient_image_url}
+            )
+            if created:
+                print(f"Ingrédient créé : {ingredient_name} (ID: {ingredient_id})")
+            else:
+                print(f"Ingrédient mis à jour : {ingredient_name} (ID: {ingredient_id})")
+        
+        print("Mise à jour ou création des ingrédients terminée.")
+    else:
+        print(f"Erreur lors de la récupération des ingrédients pour la recette {recipe_id}. Status code: {response.status_code}")
+
+
+# def update_or_create_ingredients_from_api(recipe_id):
+#     # URL de l'API pour récupérer les informations d'une recette
+#     url = f"https://api.spoonacular.com/recipes/{recipe_id}/information?apiKey={api_key}"
+#     response = requests.get(url)
+
+#     if response.status_code == 200:
+#         data = response.json()
+#         ingredients_data = data.get("extendedIngredients", [])
+        
+#         # Parcours des ingrédients de la recette
+#         for ingredient_data in ingredients_data:
+#             ingredient_id = ingredient_data['id']
+#             ingredient_name = ingredient_data['name']
+#             ingredient_image_url = f"https://spoonacular.com/cdn/ingredients_100x100/{ingredient_data.get('image', '')}"
+
+#             # Recherche si l'ingrédient existe déjà
+#             ingredient, created = Ingredient.objects.get_or_create(
+#                 id_ingredient=ingredient_id,
+#                 defaults={'name': ingredient_name, 'image_url': ingredient_image_url}
+#             )
+            
+#             if created:
+#                 print(f"Ingrédient créé : {ingredient_name} (ID: {ingredient_id})")
+#             else:
+#                 # Si l'ingrédient existe déjà, on peut le mettre à jour si nécessaire
+#                 if ingredient.name != ingredient_name or ingredient.image_url != ingredient_image_url:
+#                     ingredient.name = ingredient_name
+#                     ingredient.image_url = ingredient_image_url
+#                     ingredient.save()
+#                     print(f"Ingrédient mis à jour : {ingredient_name} (ID: {ingredient_id})")
+#                 else:
+#                     print(f"Ingrédient déjà à jour : {ingredient_name} (ID: {ingredient_id})")
+                
+#     else:
+#         print(f"Échec de la récupération des données pour la recette {recipe_id}. Code HTTP : {response.status_code}")
+
+
 
 
 def get_recipe_and_populate_ingredients(recipe_id):
@@ -116,8 +189,6 @@ def get_recipe_and_populate_ingredients(recipe_id):
 
     else:
         print(f"Error fetching details for recipe {recipe_id}. Status code: {response.status_code}")
-
-    
 
 def getRecipesSuggestionList(request): 
     ingredients = request.GET.get('list', '')
