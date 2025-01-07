@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'ingredients', 
     'recipes',
     'recipeingredient',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -53,10 +54,29 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware'
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # L'URL de votre frontend React
+    "http://localhost:3001",
+]
+CORS_ALLOW_CREDENTIALS = True  # Permet l'envoi de cookies avec les requêtes CORS
 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+]
 ROOT_URLCONF = 'food_adviser_backend.urls'
 
 TEMPLATES = [
@@ -83,12 +103,17 @@ WSGI_APPLICATION = 'food_adviser_backend.wsgi.application'
 
 DATABASES = {
     'default': {
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': BASE_DIR / 'db.sqlite3',
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+        'NAME': 'foodadviser',  # Remplacez par le nom de votre base de données
+        'USER': 'postgres',  # Remplacez par votre nom d'utilisateur PostgreSQL
+        'PASSWORD': 'selmi',  # Remplacez par votre mot de passe PostgreSQL
+        'HOST': 'localhost',  # Adresse de votre serveur PostgreSQL
+        'PORT': '5432',  # Port par défaut de PostgreSQL
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 
@@ -133,3 +158,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_COOKIE_NAME = "csrftoken"  # Nom du cookie CSRF
+CSRF_COOKIE_HTTPONLY = False  # Le cookie ne doit pas être HTTPOnly pour être accessible par JavaScript
+CSRF_HEADER_NAME = "X-CSRFToken"  # Assurez-vous que Django s'attend à cet en-tête pour CSRF
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'  # Cela permet à votre cookie CSRF de fonctionner dans un environnement local
+
+
+# Le nom du cookie CSRF
+CSRF_COOKIE_NAME = "csrftoken"
