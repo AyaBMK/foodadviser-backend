@@ -186,3 +186,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_COOKIE_NAME = "csrftoken"  # Nom du cookie CSRF
+CSRF_COOKIE_HTTPONLY = False  # Le cookie ne doit pas être HTTPOnly pour être accessible par JavaScript
+CSRF_HEADER_NAME = "X-CSRFToken"  # Assurez-vous que Django s'attend à cet en-tête pour CSRF
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'  # Cela permet à votre cookie CSRF de fonctionner dans un environnement local
+
+
+# Le nom du cookie CSRF
+CSRF_COOKIE_NAME = "csrftoken"
