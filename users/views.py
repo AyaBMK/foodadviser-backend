@@ -8,6 +8,10 @@ from .models import User as MyUser
 from django.contrib.auth.hashers import make_password, check_password
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import requires_csrf_token
+from django.contrib.auth import logout
+from django.http import JsonResponse
+
 
 def home(request):
     return HttpResponse("Bienvenue sur l'API Food Adviser !")
@@ -44,6 +48,7 @@ def login_view(request):
             email_or_pseudo = data.get('emailOrPseudo')
             password = data.get('password')
             print("pwd:", password)
+            print("pseudo:", email_or_pseudo)
 
             # Vérifier que les deux champs sont présents
             if not email_or_pseudo or not password:
@@ -68,16 +73,41 @@ def login_view(request):
 
     # Si la méthode n'est pas POST
     return JsonResponse({"error": "Method not allowed"}, status=405)
-def get_user(request):
-    user_id = request.session.get('user_id')
-    if user_id:
-        user = MyUser.objects.filter(id=user_id).first()
-        if user:
-            return JsonResponse({"userId": user.id, "email": user.email, "pseudo": user.pseudo}, status=200)
-    return JsonResponse({"error": "No user is logged in"}, status=401)
+@csrf_protect
 def logout_view(request):
-    request.session.flush()  # Efface toutes les données de session
-    return JsonResponse({"message": "Logout successful"}, status=200)
+    if request.method == 'POST':
+        logout(request)  # Déconnexion de l'utilisateur
+        return JsonResponse({"message": "Déconnexion réussie"}, status=200)
+    return JsonResponse({"error": "Méthode non autorisée"}, status=405)
+def get_user(request, user_id):
+    try:
+        user = MyUser.objects.get(id=user_id)
+        return JsonResponse({
+            'id': user.id,
+            'email': user.email,
+            'pseudo': user.pseudo,
+            'birthdate': user.birthdate,
+            'gender': user.gender
+        })
+    except MyUser.DoesNotExist:
+        return JsonResponse({"error": "Utilisateur non trouvé"}, status=404)
+# def get_user(request):
+#     user_id = request.session.get('user_id')
+#     if user_id:
+#         user = MyUser.objects.filter(id=user_id).first()
+#         if user:
+#             return JsonResponse({"userId": user.id, "email": user.email, "pseudo": user.pseudo}, status=200)
+#     return JsonResponse({"error": "No user is logged in"}, status=401)
+
+
+
+
+
+
+# @requires_csrf_token  # Permet d'ajouter le CSRF token dans les en-têtes de réponse
+# def logout_view(request):
+#     request.session.flush()  # Efface toutes les données de session
+#     return JsonResponse({"message": "Logout successful"}, status=200)
 # @csrf_protect  # Cette décorateur assure que la requête nécessite un token CSRF valide       
 # def register(request):
 #     if request.method == 'POST':
