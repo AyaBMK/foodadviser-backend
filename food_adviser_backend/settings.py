@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-+&1_x%u_!xpl6q%!m1mdz4m5oj+3ybrmf#8+j*e6h!e++2*nf('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'image_manager', 
     'rest_framework',
     'rest_framework_simplejwt',
+    'recommandations',
 ]
 
 REST_FRAMEWORK = {
@@ -151,4 +152,11 @@ import os
 
 MEDIA_URL = '/media/'  
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+
+def log_request_middleware(get_response):
+    def middleware(request):
+        print(f"Requête reçue : {request.method} {request.path}")
+        return get_response(request)
+    return middleware
+
 
